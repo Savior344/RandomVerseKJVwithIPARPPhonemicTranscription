@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOADING VERSE...</title>
+    <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"%3E%3Cpath d="M12 3L3 10h2v9h6v-6h2v6h6v-9h2L12 3z" fill="%23000"/%3E%3C/svg%3E'>
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        
+        html, body { 
+            width: 100%; 
+            height: 100%; 
+            background: #000; 
+        }
+        
+        body { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; 
+        }
+        
+        /* El contenedor ocupa exactamente el 75% del ancho y alto */
+        .contenedor { 
+            width: 75vw; 
+            height: 75vh; 
+            display: flex; 
+            flex-direction: column;
+            justify-content: space-between; 
+            overflow: hidden; /* Garantiza que nada se salga visualmente de este 75% */
+        }
+        
+        /* Texto superior izquierdo */
+        .versiculo { 
+            font-family: "Times New Roman", Times, serif; 
+            color: #fff; 
+            text-transform: uppercase; 
+            text-align: left;
+            align-self: flex-start; 
+            line-height: 1.1; 
+            font-size: var(--font-size, 4vw);
+            transition: opacity 0.5s ease-in-out;
+        }
+        
+        /* Texto inferior derecho */
+        .referencia {
+            font-family: "Times New Roman", Times, serif; 
+            color: #aaa; 
+            text-transform: uppercase; 
+            text-align: right;
+            align-self: flex-end; 
+            line-height: 1.2; 
+            /* Se asegura de que la referencia siempre sea legible (mínimo 14px) */
+            font-size: max(calc(var(--font-size, 4vw) * 0.4), 14px); 
+            transition: opacity 0.5s ease-in-out;
+            margin-top: 20px;
+        }
+
+        .oculto {
+            opacity: 0;
+        }
+
+        /*
+         * Palabras para las que no se encontró una transcripción
+         * fonémica RP en Wiktionary.
+         */
+        .sin-rp {
+            color: #000;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor">
+        <div class="versiculo" id="versiculo">LOADING VERSE...</div>
+        <div class="referencia" id="referencia"></div>
+    </div>
+
+    <script>
+        const libros = [
+            {n: "Genesis", c: 50}, {n: "Exodus", c: 40}, {n: "Leviticus", c: 27}, {n: "Numbers", c: 36}, {n: "Deuteronomy", c: 34}, {n: "Joshua", c: 24}, {n: "Judges", c: 21}, {n: "Ruth", c: 4}, {n: "1 Samuel", c: 31}, {n: "2 Samuel", c: 24}, {n: "1 Kings", c: 22}, {n: "2 Kings", c: 25}, {n: "1 Chronicles", c: 29}, {n: "2 Chronicles", c: 36}, {n: "Ezra", c: 10}, {n: "Nehemiah", c: 13}, {n: "Esther", c: 10}, {n: "Job", c: 42}, {n: "Psalms", c: 150}, {n: "Proverbs", c: 31}, {n: "Ecclesiastes", c: 12}, {n: "Song of Solomon", c: 8}, {n: "Isaiah", c: 66}, {n: "Jeremiah", c: 52}, {n: "Lamentations", c: 5}, {n: "Ezekiel", c: 48}, {n: "Daniel", c: 12}, {n: "Hosea", c: 14}, {n: "Joel", c: 3}, {n: "Amos", c: 9}, {n: "Obadiah", c: 1}, {n: "Jonah", c: 4}, {n: "Micah", c: 7}, {n: "Nahum", c: 3}, {n: "Habakkuk", c: 3}, {n: "Zephaniah", c: 3}, {n: "Haggai", c: 2}, {n: "Zechariah", c: 14}, {n: "Malachi", c: 4}, {n: "Matthew", c: 28}, {n: "Mark", c: 16}, {n: "Luke", c: 24}, {n: "John", c: 21}, {n: "Acts", c: 28}, {n: "Romans", c: 16}, {n: "1 Corinthians", c: 16}, {n: "2 Corinthians", c: 13}, {n: "Galatians", c: 6}, {n: "Ephesians", c: 6}, {n: "Philippians", c: 4}, {n: "Colossians", c: 4}, {n: "1 Thessalonians", c: 5}, {n: "2 Thessalonians", c: 3}, {n: "1 Timothy", c: 6}, {n: "2 Timothy", c: 4}, {n: "Titus", c: 3}, {n: "Philemon", c: 1}, {n: "Hebrews", c: 13}, {n: "James", c: 5}, {n: "1 Peter", c: 5}, {n: "2 Peter", c: 3}, {n: "1 John", c: 5}, {n: "2 John", c: 1}, {n: "3 John", c: 1}, {n: "Jude", c: 1}, {n: "Revelation", c: 22}
+        ];
+
+        /*
+         * ============================================================
+         * DICCIONARIO RP MANUAL
+         * ============================================================
+         *
+         * Aquí puedes agregar manualmente palabras que Wiktionary
+         * no encuentre o cuya transcripción quieras corregir.
+         *
+         * La clave debe ir en minúsculas.
+         *
+         * Ejemplo:
+         *
+         * "word": "wɜːd"
+         *
+         * NO pongas barras:
+         * ❌ "/wɜːd/"
+         * ✅ "wɜːd"
+         *
+         * Estas entradas tienen prioridad sobre Wiktionary.
+         */
+        const diccionarioRP = {
+            // Ejemplos:
+            // "thou": "ðaʊ",
+            // "thee": "ðiː",
+            // "hath": "hæθ",
+            // "doth": "dʌθ"
+        };
+
+
+        const versiculoEl = document.getElementById('versiculo');
+        const referenciaEl = document.getElementById('referencia');
+        const contenedor = document.querySelector('.contenedor');
+
+
+        /*
+         * ============================================================
+         * CONFIGURACIÓN DE WIKTIONARY
+         * ============================================================
+         */
+
+        const WIKTIONARY_API =
+            "https://en.wiktionary.org/w/api.php";
+
+
+        /*
+         * Cache local.
+         *
+         * Así, si una palabra ya fue consultada anteriormente,
+         * no tenemos que volver a realizar la petición.
+         */
+        const CACHE_KEY = "kjv_rp_wiktionary_cache";
+
+
+        function cargarCache() {
+            try {
+                const cache = localStorage.getItem(CACHE_KEY);
+
+                if (!cache) {
+                    return {};
+                }
+
+                return JSON.parse(cache);
+            } catch (error) {
+                console.warn("No se pudo cargar la caché:", error);
+                return {};
+            }
+        }
+
+
+        const cacheRP = cargarCache();
+
+
+        function guardarCache() {
+            try {
+                localStorage.setItem(
+                    CACHE_KEY,
+                    JSON.stringify(cacheRP)
+                );
+            } catch (error) {
+                console.warn("No se pudo guardar la caché:", error);
+            }
+        }
+
+
+        /*
+         * ============================================================
+         * OBTENER WIKITEXTO DE WIKTIONARY
+         * ============================================================
+         */
+
+        async function obtenerWikitexto(palabra) {
+
+            const parametros = new URLSearchParams({
+                action: "query",
+                prop: "revisions",
+                titles: palabra,
+                rvprop: "content",
+                rvslots: "main",
+                formatversion: "2",
+                format: "json",
+                origin: "*"
+            });
+
+
+            const respuesta = await fetch(
+                `${WIKTIONARY_API}?${parametros.toString()}`
+            );
+
+
+            if (!respuesta.ok) {
+                throw new Error(
+                    `HTTP ${respuesta.status}`
+                );
+            }
+
+
+            const datos = await respuesta.json();
+
+
+            if (
+                !datos.query ||
+                !datos.query.pages ||
+                !datos.query.pages.length
+            ) {
+                return null;
+            }
+
+
+            const pagina = datos.query.pages[0];
+
+
+            /*
+             * Si la página no existe.
+             */
+            if (pagina.missing) {
+                return null;
+            }
+
+
+            if (
+                !pagina.revisions ||
+                !pagina.revisions.length
+            ) {
+                return null;
+            }
+
+
+            const revision = pagina.revisions[0];
+
+
+            /*
+             * MediaWiki puede entregar el contenido de dos formas
+             * dependiendo de la versión/formato de la API.
+             */
+            if (
+                revision.slots &&
+                revision.slots.main &&
+                typeof revision.slots.main.content === "string"
+            ) {
+                return revision.slots.main.content;
+            }
+
+
+            if (typeof revision.content === "string") {
+                return revision.content;
+            }
+
+
+            return null;
+        }
+
+
+        /*
+         * ============================================================
+         * EXTRAER IPA RP DEL WIKITEXTO
+         * ============================================================
+         *
+         * Busca construcciones como:
+         *
+         * {{IPA|en|/ˈwɜːd/|a=Received Pronunciation}}
+         *
+         * {{IPA|en|/ˈwɜːd/|a=RP}}
+         *
+         * {{IPA|en|/ˈwɜːd/|a=UK,RP}}
+         *
+         * También intenta reconocer variantes donde el texto
+         * "Received Pronunciation" aparece asociado al bloque.
+         */
+
+        function extraerRPDentroDeTemplate(template) {
+
+            const parametros = template
+                .split("|")
+                .map(p => p.trim());
+
+
+            if (
+                !parametros.length ||
+                !/^{{\s*IPA\s*/i.test(parametros[0])
+            ) {
+                return null;
+            }
+
+
+            let esIngles = false;
+            let esRP = false;
+            let pronunciaciones = [];
+
+
+            for (let i = 1; i < parametros.length; i++) {
+
+                const parametro = parametros[i];
+
+
+                /*
+                 * Parámetro de idioma:
+                 *
+                 * {{IPA|en|...}}
+                 */
+                if (
+                    parametro.toLowerCase() === "en" ||
+                    parametro.toLowerCase() === "lang=en"
+                ) {
+                    esIngles = true;
+                    continue;
+                }
+
+
+                /*
+                 * Accent qualifier:
+                 *
+                 * a=RP
+                 * a=UK,RP
+                 * a=Received Pronunciation
+                 */
+                const coincidenciaAccent =
+                    parametro.match(
+                        /^a\d*\s*=\s*(.+)$/i
+                    );
+
+
+                if (coincidenciaAccent) {
+
+                    const accent =
+                        coincidenciaAccent[1]
+                            .toLowerCase();
+
+                    if (
+                        accent.includes("received pronunciation") ||
+                        /\brp\b/.test(accent)
+                    ) {
+                        esRP = true;
+                    }
+
+                    continue;
+                }
+
+
+                /*
+                 * Algunos registros pueden tener:
+                 *
+                 * (Received Pronunciation)
+                 *
+                 * como información adicional.
+                 */
+                if (
+                    /received pronunciation/i.test(parametro) ||
+                    /\bRP\b/.test(parametro)
+                ) {
+                    esRP = true;
+                    continue;
+                }
+
+
+                /*
+                 * Parámetros numerados que contienen
+                 * la pronunciación.
+                 *
+                 * Ignoramos cualificadores que no sean IPA.
+                 */
+                const parametroPronunciacion =
+                    parametro.replace(
+                        /^\d+\s*=\s*/,
+                        ""
+                    );
+
+
+                /*
+                 * Buscamos exclusivamente pronunciaciones
+                 * entre /.../, ya que queremos una pronunciación
+                 * fonémica y no fonética [ ... ].
+                 */
+                const coincidenciasIPA =
+                    parametroPronunciacion.match(
+                        /\/([^/\n]+)\/+/g
+                    );
+
+
+                if (coincidenciasIPA) {
+
+                    pronunciaciones.push(
+                        ...coincidenciasIPA.map(
+                            ipa => ipa
+                                .replace(/^\/+/, "")
+                                .replace(/\/+$/, "")
+                                .trim()
+                        )
+                    );
+                }
+            }
+
+
+            if (!esIngles || !esRP) {
+                return null;
+            }
+
+
+            if (!pronunciaciones.length) {
+                return null;
+            }
+
+
+            return pronunciaciones[0];
+        }
+
+
+        /*
+         * Busca templates {{IPA|...}} dentro del wikitexto.
+         */
+        function extraerRP(wikitexto) {
+
+            if (!wikitexto) {
+                return null;
+            }
+
+
+            /*
+             * Normalizamos saltos de línea solamente para
+             * analizar el código de Wiktionary.
+             */
+            const texto =
+                wikitexto.replace(/\r?\n/g, " ");
+
+
+            /*
+             * Capturamos cada template IPA.
+             *
+             * No usamos un parser completo de MediaWiki porque
+             * para este caso buscamos específicamente los bloques
+             * IPA de pronunciación.
+             */
+            const templates = [];
+            let posicion = 0;
+
+
+            while (true) {
+
+                const inicio =
+                    texto.indexOf(
+                        "{{IPA",
+                        posicion
+                    );
+
+
+                if (inicio === -1) {
+                    break;
+                }
+
+
+                const fin =
+                    texto.indexOf(
+                        "}}",
+                        inicio
+                    );
+
+
+                if (fin === -1) {
+                    break;
+                }
+
+
+                templates.push(
+                    texto.substring(
+                        inicio,
+                        fin + 2
+                    )
+                );
+
+
+                posicion = fin + 2;
+            }
+
+
+            for (const template of templates) {
+
+                const rp =
+                    extraerRPDentroDeTemplate(
+                        template
+                    );
+
+
+                if (rp) {
+                    return limpiarIPA(rp);
+                }
+            }
+
+
+            /*
+             * Algunos artículos de Wiktionary tienen la
+             * información de RP fuera del parámetro "a=".
+             *
+             * Intentamos una segunda estrategia más tolerante.
+             */
+            return extraerRPFlexible(texto);
+        }
+
+
+        /*
+         * Segunda estrategia de búsqueda.
+         *
+         * Sirve para estructuras en las que "Received
+         * Pronunciation" aparece cerca del template IPA.
+         */
+        function extraerRPFlexible(texto) {
+
+            const patron =
+                /Received Pronunciation[\s\S]{0,1000}?{{IPA\|en\|([^|}]+)\|?/i;
+
+
+            const coincidencia =
+                texto.match(patron);
+
+
+            if (!coincidencia) {
+                return null;
+            }
+
+
+            const valor =
+                coincidencia[1].trim();
+
+
+            const ipa =
+                valor.match(
+                    /\/([^/\n]+)\/+/
+                );
+
+
+            if (!ipa) {
+                return null;
+            }
+
+
+            return limpiarIPA(
+                ipa[1]
+            );
+        }
+
+
+        /*
+         * Quita las barras diagonales y algunos artefactos
+         * accidentales del contenido extraído.
+         */
+        function limpiarIPA(ipa) {
+
+            return ipa
+                .replace(/^\/+/, "")
+                .replace(/\/+$/, "")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+
+        /*
+         * ============================================================
+         * OBTENER PRONUNCIACIÓN DE UNA PALABRA
+         * ============================================================
+         */
+
+        async function obtenerPronunciacionRP(palabra) {
+
+            const clave =
+                palabra
+                    .toLowerCase()
+                    .trim();
+
+
+            /*
+             * 1. El diccionario manual tiene máxima prioridad.
+             */
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    diccionarioRP,
+                    clave
+                )
+            ) {
+                return {
+                    texto: diccionarioRP[clave],
+                    encontrada: true,
+                    fuente: "manual"
+                };
+            }
+
+
+            /*
+             * 2. Caché local.
+             */
+            if (
+                Object.prototype.hasOwnProperty.call(
+                    cacheRP,
+                    clave
+                )
+            ) {
+
+                return cacheRP[clave];
+            }
+
+
+            /*
+             * 3. Consultamos Wiktionary.
+             */
+            try {
+
+                let wikitexto =
+                    await obtenerWikitexto(
+                        palabra
+                    );
+
+
+                /*
+                 * Si no encontramos la página exacta,
+                 * hacemos un segundo intento en minúsculas.
+                 *
+                 * Esto ayuda con palabras capitalizadas
+                 * al principio del versículo.
+                 */
+                if (!wikitexto) {
+
+                    const minuscula =
+                        palabra.toLowerCase();
+
+
+                    if (
+                        minuscula !== palabra
+                    ) {
+                        wikitexto =
+                            await obtenerWikitexto(
+                                minuscula
+                            );
+                    }
+                }
+
+
+                const rp =
+                    extraerRP(wikitexto);
+
+
+                if (rp) {
+
+                    const resultado = {
+                        texto: rp,
+                        encontrada: true,
+                        fuente: "wiktionary"
+                    };
+
+
+                    cacheRP[clave] = resultado;
+                    guardarCache();
+
+
+                    return resultado;
+                }
+
+
+                /*
+                 * No se encontró RP.
+                 */
+                const resultado = {
+                    texto: palabra,
+                    encontrada: false,
+                    fuente: "none"
+                };
+
+
+                cacheRP[clave] = resultado;
+                guardarCache();
+
+
+                return resultado;
+
+            } catch (error) {
+
+                console.warn(
+                    `Error obteniendo RP de "${palabra}":`,
+                    error
+                );
+
+
+                /*
+                 * Si la API falla, tratamos la palabra
+                 * como no encontrada.
+                 */
+                return {
+                    texto: palabra,
+                    encontrada: false,
+                    fuente: "error"
+                };
+            }
+        }
+
+
+        /*
+         * ============================================================
+         * TOKENIZACIÓN
+         * ============================================================
+         *
+         * Separa las palabras de la puntuación.
+         *
+         * Ejemplo:
+         *
+         * "The Lord's word."
+         *
+         * →
+         * The
+         * espacio
+         * Lord's
+         * espacio
+         * word
+         * .
+         *
+         * De este modo la puntuación original nunca se pierde.
+         */
+
+        function separarTokens(texto) {
+
+            return texto.match(
+                /[A-Za-z]+(?:['’][A-Za-z]+)*|[^A-Za-z]+/g
+            ) || [];
+        }
+
+
+        /*
+         * ============================================================
+         * TRANSCRIBIR EL VERSÍCULO
+         * ============================================================
+         */
+
+        async function transcribirVersiculo(texto) {
+
+            const tokens =
+                separarTokens(texto);
+
+
+            /*
+             * Solo consultamos palabras.
+             */
+            const palabras =
+                tokens.filter(
+                    token =>
+                        /^[A-Za-z]+(?:['’][A-Za-z]+)*$/.test(
+                            token
+                        )
+                );
+
+
+            /*
+             * Evitamos consultar dos veces una misma palabra
+             * dentro del mismo versículo.
+             */
+            const palabrasUnicas =
+                [...new Set(
+                    palabras.map(
+                        palabra =>
+                            palabra.toLowerCase()
+                    )
+                )];
+
+
+            /*
+             * Hacemos las consultas en paralelo.
+             */
+            const resultados =
+                await Promise.all(
+                    palabrasUnicas.map(
+                        palabra =>
+                            obtenerPronunciacionRP(
+                                palabra
+                            )
+                    )
+                );
+
+
+            /*
+             * Creamos un mapa:
+             *
+             * palabra → resultado
+             */
+            const mapa = new Map();
+
+
+            palabrasUnicas.forEach(
+                (palabra, indice) => {
+
+                    mapa.set(
+                        palabra,
+                        resultados[indice]
+                    );
+                }
+            );
+
+
+            /*
+             * Construimos el HTML final preservando
+             * exactamente los espacios y signos.
+             */
+            let html = "";
+
+
+            for (const token of tokens) {
+
+                const esPalabra =
+                    /^[A-Za-z]+(?:['’][A-Za-z]+)*$/
+                        .test(token);
+
+
+                /*
+                 * Si no es una palabra, se conserva
+                 * exactamente como estaba.
+                 */
+                if (!esPalabra) {
+
+                    html +=
+                        escapeHTML(token);
+
+                    continue;
+                }
+
+
+                const clave =
+                    token.toLowerCase();
+
+
+                const resultado =
+                    mapa.get(clave);
+
+
+                /*
+                 * Si Wiktionary no tiene RP,
+                 * usamos la palabra original y
+                 * fondo blanco / texto negro.
+                 */
+                if (
+                    !resultado ||
+                    !resultado.encontrada
+                ) {
+
+                    html +=
+                        `<span class="sin-rp">${escapeHTML(token)}</span>`;
+
+                    continue;
+                }
+
+
+                /*
+                 * Pronunciación encontrada.
+                 */
+                html +=
+                    escapeHTML(
+                        resultado.texto
+                    );
+            }
+
+
+            return html;
+        }
+
+
+        /*
+         * ============================================================
+         * ESCAPE HTML
+         * ============================================================
+         *
+         * Evita que caracteres procedentes del texto
+         * del versículo puedan interpretarse como HTML.
+         */
+        function escapeHTML(texto) {
+
+            return texto
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+
+        /*
+         * ============================================================
+         * OBTENER VERSÍCULO ALEATORIO
+         * ============================================================
+         */
+
+        async function obtenerVersiculoAleatorio() {
+
+            try {
+
+                versiculoEl.classList.add('oculto');
+                referenciaEl.classList.add('oculto');
+
+
+                const libroAleatorio =
+                    libros[
+                        Math.floor(
+                            Math.random() *
+                            libros.length
+                        )
+                    ];
+
+
+                const capituloAleatorio =
+                    Math.floor(
+                        Math.random() *
+                        libroAleatorio.c
+                    ) + 1;
+
+
+                const respuesta =
+                    await fetch(
+                        `https://bible-api.com/${libroAleatorio.n}+${capituloAleatorio}?translation=kjv`
+                    );
+
+
+                const datos =
+                    await respuesta.json();
+
+
+                if (
+                    datos.verses &&
+                    datos.verses.length > 0
+                ) {
+
+                    const versiculoElegido =
+                        datos.verses[
+                            Math.floor(
+                                Math.random() *
+                                datos.verses.length
+                            )
+                        ];
+
+
+                    await actualizarInterfaz(
+                        versiculoElegido.text,
+                        libroAleatorio.n,
+                        capituloAleatorio,
+                        versiculoElegido.verse
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Hubo un error obteniendo el versículo:",
+                    error
+                );
+            }
+        }
+
+
+        /*
+         * ============================================================
+         * AJUSTAR TAMAÑO DEL TEXTO
+         * ============================================================
+         */
+
+        function ajustarTamanoTexto() {
+
+            let sizeVW = 10;
+
+            document.documentElement.style.setProperty(
+                '--font-size',
+                `${sizeVW}vw`
+            );
+
+
+            while (
+                (
+                    contenedor.scrollHeight >
+                    contenedor.clientHeight ||
+
+                    contenedor.scrollWidth >
+                    contenedor.clientWidth
+                )
+                &&
+                sizeVW > 1
+            ) {
+
+                sizeVW -= 0.2;
+
+
+                document.documentElement.style.setProperty(
+                    '--font-size',
+                    `${sizeVW}vw`
+                );
+            }
+        }
+
+
+        /*
+         * ============================================================
+         * ACTUALIZAR INTERFAZ
+         * ============================================================
+         */
+
+        async function actualizarInterfaz(
+            texto,
+            libro,
+            capitulo,
+            numVersiculo
+        ) {
+
+            const textoLimpio =
+                texto
+                    .replace(/\n/g, ' ')
+                    .trim();
+
+
+            const textoReferencia =
+                `KJV — ${libro} ${capitulo}:${numVersiculo}`;
+
+
+            document.title =
+                `${libro} ${capitulo}:${numVersiculo}`;
+
+
+            /*
+             * Aquí se produce la transcripción.
+             */
+            const textoFonemico =
+                await transcribirVersiculo(
+                    textoLimpio
+                );
+
+
+            /*
+             * innerHTML es necesario porque las palabras
+             * sin RP necesitan su <span class="sin-rp">.
+             */
+            versiculoEl.innerHTML =
+                textoFonemico;
+
+
+            referenciaEl.innerText =
+                textoReferencia;
+
+
+            /*
+             * Ajustamos el tamaño dinámicamente
+             * antes de mostrarlo.
+             */
+            ajustarTamanoTexto();
+
+
+            setTimeout(() => {
+
+                versiculoEl.classList.remove(
+                    'oculto'
+                );
+
+                referenciaEl.classList.remove(
+                    'oculto'
+                );
+
+            }, 100);
+        }
+
+
+        /*
+         * Reajustar el texto si el usuario
+         * cambia el tamaño de la ventana.
+         */
+        window.addEventListener(
+            'resize',
+            ajustarTamanoTexto
+        );
+
+
+        /*
+         * ============================================================
+         * INICIO
+         * ============================================================
+         */
+
+        window.onload = () => {
+
+            obtenerVersiculoAleatorio();
+
+
+            /*
+             * Un nuevo versículo cada 5 minutos.
+             */
+            setInterval(
+                obtenerVersiculoAleatorio,
+                300000
+            );
+        };
+
+    </script>
+</body>
+</html>
